@@ -1,13 +1,13 @@
-import java.util.Stack;
+import java.util.*;
 
 /**
  * Created by vivian on 2017/11/1.
  */
-public class REToDFAO {
+public class Analyzer {
     private static int stateId = 0;
     private static Stack<Character> operators = new Stack<Character>();
     private static Stack<NFA> nfas = new Stack<NFA>();
-    private static Stack<DFA> dfas = new Stack<DFA>();
+    private static Set<Character> inputSymbol = new HashSet<Character>();
 
     private static NFA REToNFA(String re) {
         re = addDotToRE(re);
@@ -43,7 +43,7 @@ public class REToDFAO {
 
         NFA nfa = nfas.pop();
 
-        //制定终态为接受态
+        //指定终态为接受态
         nfa.getNfaStates().getLast().setAcceptState(true);
 
         return nfa;
@@ -197,14 +197,140 @@ public class REToDFAO {
         nfas.push(currentNFA);
     }
 
-    public static void main(String[] args) {
-//        String s = REToDFAO.addDotToRE("(a|b)*abb(a|b)*");
-        NFA nfa = REToDFAO.REToNFA("(a|b)*a");
-//        System.out.println(nfa.getNfaStates().size());
-        for (State s : nfa.getNfaStates()) {
-            s.print();
-            System.out.println();
+    private static DFA NFAToDFA(NFA nfa) {
+        //初始化
+        DFA dfa = new DFA();
+        stateId = 0;
+        LinkedList<State> unHandledState = new LinkedList<State>();
+        inputSymbol.add('a');
+        inputSymbol.add('b');
+
+        //DFA的第一个状态
+        Set<State> firstStateSet = new HashSet<State>();
+        State start = nfa.getNfaStates().getFirst();
+        firstStateSet.add(start);
+        firstStateSet = epsilonClosure(firstStateSet);
+        State startDFA = new State(stateId, firstStateSet);
+        stateId++;
+        dfa.getDfaStates().add(startDFA);
+        unHandledState.add(startDFA);
+
+        //开始循环处理
+        while (!unHandledState.isEmpty()) {
+            State currentState = unHandledState.removeFirst();
+            for (char c : inputSymbol) {
+                Set<State> set = addTransition(c, currentState.getStatesForDFA());
+                set = epsilonClosure(set);
+                //用于判断状态是否重复的变量
+                boolean exist = false;
+                //用于记录可能出现的已存在的状态
+                State repeatState = null;
+                for (State s : dfa.getDfaStates()) {
+                    //两个set完全相等
+                    if (s.getStatesForDFA().containsAll(set) && set.containsAll(s.getStatesForDFA())) {
+                        exist = true;
+                        repeatState = s;
+                        break;
+                    }
+                }
+
+                if (!exist) {
+                    State newState = new State(stateId, set);
+                    stateId++;
+                    dfa.getDfaStates().add(newState);
+                    unHandledState.add(newState);
+                    currentState.setNextState(c, newState);
+                } else {
+                    currentState.setNextState(c, repeatState);
+                }
+            }
+
         }
+
+        return dfa;
+
+    }
+    //寻找某个NFA状态集（也就是DFA状态核）的epsilon闭包
+    private static Set<State> epsilonClosure(Set<State> originState) {
+        Stack<State> stack = new Stack<State>();
+        for (State s : originState) {
+            stack.push(s);
+        }
+        while (!stack.empty()) {
+            State state = stack.pop();
+            ArrayList<State> epsilonStates = state.getNextStatesBySymbol('e');
+            for (State s : epsilonStates) {
+                if (!originState.contains(s)) {
+                    originState.add(s);
+                    stack.push(s);
+                }
+            }
+        }
+        return originState;
+    }
+
+    private static Set<State> addTransition (char symbol, Set<State> originState) {
+        Set<State> transState = new HashSet<State>();
+        for (State s : originState) {
+            ArrayList<State> followState = s.getNextStatesBySymbol(symbol);
+            if (followState.size()!=0) {
+                for (State s1 : followState) {
+                    transState.add(s1);
+                }
+            }
+        }
+        return transState;
+    }
+
+    private static void DFAToDFAO(DFA dfa) {
+        //F表示终态，NF表示非终态
+        Group F = new Group();
+        Group NF = new Group();
+
+        //为了优化方便，先统一用id来代表DFA中的每个状态，需要的时候再通过id得到state
+        //此处也把DFA分为初始的终态和非终态
+        Map<Integer, State> states = new HashMap<Integer, State>();
+        for (State s : dfa.getDfaStates()) {
+            states.put(s.getStateId(), s);
+            for (State s1 : s.getStatesForDFA()) {
+                if (s1.isAcceptState()) {
+                    F.getStateId().add(s1.getStateId());
+                } else {
+                    NF.getStateId().add(s1.getStateId());
+                }
+            }
+        }
+
+        List<Group> level = new ArrayList<Group>();
+        level.add(F);
+        level.add(NF);
+
+    }
+    public static void main(String[] args) {
+//        String s = Analyzer.addDotToRE("(a|b)*abb(a|b)*");
+//        System.out.println(nfa.getNfaStates().size());
+
+        NFA nfa = Analyzer.REToNFA("(a|b)*a");
+//        for (State s : nfa.getNfaStates()) {
+//            s.print();
+//            System.out.println();
+//        }
 //        System.out.println(s);
+
+//        Set<State> originState = new HashSet<State>();
+//        originState.add(nfa.getNfaStates().getFirst());
+//        Set<State> states = Analyzer.epsilonClosure(originState);
+//        Set<State> states1 = Analyzer.addTransition('a', states);
+//        for (State s : states) {
+//            System.out.print(s.getStateId() + " ");
+//        }
+//        System.out.println();
+//
+//        for (State s : states1) {
+//            System.out.print(s.getStateId() + " ");
+//        }
+
+        DFA dfa = Analyzer.NFAToDFA(nfa);
+        System.out.println(dfa.getDfaStates().size());
     }
 }

@@ -6,6 +6,10 @@ import java.util.LinkedList;
 public class DFA {
     private LinkedList<State> dfaStates;
 
+    public DFA() {
+        this.dfaStates = new LinkedList<State>();
+    }
+
     public LinkedList<State> getDfaStates() {
         return dfaStates;
     }

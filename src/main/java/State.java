@@ -7,13 +7,22 @@ import java.util.*;
  */
 public class State {
     private int stateId;
-    private Set<State> states;
+    private Set<State> statesForDFA;
     //状态A通过字母c转换为状态B，则表示为Set<c, A> = B
     private Map<Character, ArrayList<State>> nextState;
     private boolean acceptState;
 
+    //用于构造NFA
     public State(int id) {
         this.stateId = id;
+        this.nextState = new HashMap<Character, ArrayList<State>>();
+        this.acceptState = false;
+    }
+
+    //用于构造DFA
+    public State(int id, Set<State> states) {
+        this.stateId = id;
+        this.statesForDFA = states;
         this.nextState = new HashMap<Character, ArrayList<State>>();
         this.acceptState = false;
     }
@@ -26,12 +35,12 @@ public class State {
         this.stateId = stateId;
     }
 
-    public Set<State> getStates() {
-        return states;
+    public Set<State> getStatesForDFA() {
+        return statesForDFA;
     }
 
-    public void setStates(Set<State> states) {
-        this.states = states;
+    public void setStatesForDFA(Set<State> statesForDFA) {
+        this.statesForDFA = statesForDFA;
     }
 
     public Map<Character, ArrayList<State>> getNextState() {
@@ -57,6 +66,7 @@ public class State {
         this.acceptState = acceptState;
     }
 
+    //输出一个state以及与它有连接的后续state，这个方法是测试时使用的
     public void print() {
         System.out.print(this.getStateId() + " ");
         Map<Character, ArrayList<State>> characterArrayListMap = this.getNextState();
@@ -66,6 +76,14 @@ public class State {
             for (State s : states) {
                 System.out.print(s.getStateId() + " ");
             }
+        }
+    }
+
+    public ArrayList<State> getNextStatesBySymbol(char symbol) {
+        if (this.getNextState().get(symbol) != null) {
+            return this.getNextState().get(symbol);
+        } else {
+            return new ArrayList<State>();
         }
     }
 }
