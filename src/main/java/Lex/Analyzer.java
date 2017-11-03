@@ -1,3 +1,5 @@
+package Lex;
+
 import java.util.*;
 
 /**
@@ -8,6 +10,13 @@ public class Analyzer {
     private static Stack<Character> operators = new Stack<Character>();
     private static Stack<NFA> nfas = new Stack<NFA>();
     private static Set<Character> inputSymbol = new HashSet<Character>();
+
+    //关于DFA转换表的一些变量
+    private static int column = 3;
+    private static int row;
+    private static int[][] table;
+    //为了优化方便，统一用id来代表DFA中的每个状态，需要的时候再通过id得到state
+    private static Map<Integer, State> states = new HashMap<Integer, State>();
 
     private static NFA REToNFA(String re) {
         re = addDotToRE(re);
@@ -30,8 +39,8 @@ public class Analyzer {
                 operators.pop();
             } else {
                 //若栈顶运算符的优先级高于新出现的运算符的优先级，就执行运算
-//                Operator o = Operator.getOperator('|');
-//                int ii = Operator.getPrivilege(o);
+//                Lex.Operator o = Lex.Operator.getOperator('|');
+//                int ii = Lex.Operator.getPrivilege(o);
                 while (!operators.empty() && Operator.getPrivilege(Operator.getOperator(operators.peek())) >= Operator.getPrivilege(Operator.getOperator(re.charAt(i)))) {
                     doOperation();
                 }
@@ -39,7 +48,9 @@ public class Analyzer {
             }
         }
 
-        while (!operators.isEmpty()) {	doOperation(); }
+        while (!operators.isEmpty()) {
+            doOperation();
+        }
 
         NFA nfa = nfas.pop();
 
@@ -237,6 +248,15 @@ public class Analyzer {
                 if (!exist) {
                     State newState = new State(stateId, set);
                     stateId++;
+
+                    //判断该状态里是否包含终态
+                    for (State s : newState.getStatesForDFA()) {
+                        if (s.isAcceptState()) {
+                            newState.setAcceptState(true);
+                            break;
+                        }
+                    }
+
                     dfa.getDfaStates().add(newState);
                     unHandledState.add(newState);
                     currentState.setNextState(c, newState);
@@ -250,6 +270,7 @@ public class Analyzer {
         return dfa;
 
     }
+
     //寻找某个NFA状态集（也就是DFA状态核）的epsilon闭包
     private static Set<State> epsilonClosure(Set<State> originState) {
         Stack<State> stack = new Stack<State>();
@@ -269,11 +290,11 @@ public class Analyzer {
         return originState;
     }
 
-    private static Set<State> addTransition (char symbol, Set<State> originState) {
+    private static Set<State> addTransition(char symbol, Set<State> originState) {
         Set<State> transState = new HashSet<State>();
         for (State s : originState) {
             ArrayList<State> followState = s.getNextStatesBySymbol(symbol);
-            if (followState.size()!=0) {
+            if (followState.size() != 0) {
                 for (State s1 : followState) {
                     transState.add(s1);
                 }
@@ -282,22 +303,48 @@ public class Analyzer {
         return transState;
     }
 
-    private static void DFAToDFAO(DFA dfa) {
+
+    private static int[][] DFATable(DFA dfa) {
+        //先把所有的状态都用id表示
+        for (State s : dfa.getDfaStates()) {
+            states.put(s.getStateId(), s);
+        }
+
+        row = states.size();
+        table = new int[row][column];
+
+        //制表
+        Character[] symbols = new Character[inputSymbol.size()];
+        inputSymbol.toArray(symbols);
+        for (int i = 0; i < row; i++) {
+            //每行的第一列是所有的DFA状态，依次排列
+            table[i][0] = i;
+            //后面的列是转换后的状态
+            for (int j = 1; j < column; j++) {
+                char symbol = symbols[j - 1];
+                State originState = states.get(i);
+                int transStateID = originState.getNextStatesBySymbol(symbol).get(0).getStateId();
+                table[i][j] = transStateID;
+            }
+        }
+
+        return table;
+    }
+
+    private static int[][] DFAToDFAO(DFA dfa) {
+        //建立DFA转换表
+        DFATable(dfa);
+
         //F表示终态，NF表示非终态
         Group F = new Group();
         Group NF = new Group();
 
-        //为了优化方便，先统一用id来代表DFA中的每个状态，需要的时候再通过id得到state
-        //此处也把DFA分为初始的终态和非终态
-        Map<Integer, State> states = new HashMap<Integer, State>();
+        //把DFA分为初始的终态和非终态
         for (State s : dfa.getDfaStates()) {
-            states.put(s.getStateId(), s);
-            for (State s1 : s.getStatesForDFA()) {
-                if (s1.isAcceptState()) {
-                    F.getStateId().add(s1.getStateId());
-                } else {
-                    NF.getStateId().add(s1.getStateId());
-                }
+            if (s.isAcceptState()) {
+                F.getStates().add(s.getStateId());
+            } else {
+                NF.getStates().add(s.getStateId());
             }
         }
 
@@ -305,32 +352,198 @@ public class Analyzer {
         level.add(F);
         level.add(NF);
 
+        //递归进行分组
+        List<Group> newLevel = level;
+        do {
+            level = newLevel;
+            newLevel = new ArrayList<Group>();
+            for (Group g : level) {
+                if (g.isStrong()) {
+                    newLevel.add(g);
+                } else {
+                    Set<Integer> left = new HashSet<Integer>();
+                    Set<Integer> right = new HashSet<Integer>();
+                    divideGroup(level, g, left, right);
+                    boolean isStrong = checkStrong(left);
+                    Group group = new Group(left, isStrong);
+                    newLevel.add(group);
+
+                    if (!right.isEmpty()) {
+                        isStrong = checkStrong(right);
+                        newLevel.add(new Group(right, isStrong));
+                    }
+                }
+            }
+        } while (newLevel.size() != level.size());
+
+//        System.out.println(level.size());
+
+        updateTable(level);
+
+        return table;
     }
+
+    private static void updateTable(List<Group> level) {
+        Set<Integer> redundantIds = new HashSet<Integer>();
+        Map<Integer, Integer> replace = new HashMap<Integer, Integer>();
+
+        //将同一组里的状态统一用一个状态代替
+        for (Group group : level) {
+            if (group.getStates().size() > 1) {
+                int first = -1;
+                for (int id : group.getStates()) {
+                    if (first == -1) {
+                        first = id;
+                        continue;
+                    } else {
+                        redundantIds.add(id);
+                        replace.put(id, first);
+                    }
+                }
+            }
+        }
+
+        int[][] newTable = new int[row - redundantIds.size()][column];
+        int newRow = 0;
+        int newColumn = 0;
+
+        //先填充新表包含的状态，即转换表的第一列
+        for (int i=0;i<row;i++) {
+            if (!redundantIds.contains(table[i][0])) {
+                newTable[newRow][0] = table[i][0];
+                newRow++;
+            }
+        }
+
+        for (int i=0;i<newRow;i++) {
+            int currentId = newTable[i][0];
+            int beforeRow = 0;
+            for (int n = 0;n<row;n++) {
+                if (table[n][0] == currentId) {
+                    beforeRow = n;
+                    break;
+                }
+            }
+
+            for (int j=1;j<column;j++) {
+                int stateId = table[beforeRow][j];
+                if (!redundantIds.contains(stateId)) {
+                    newTable[i][j] = stateId;
+                } else {
+                    int replaceId = replace.get(stateId);
+                    newTable[i][j] = replaceId;
+                }
+            }
+        }
+
+        table = newTable;
+    }
+
+    /**
+     * 对给定分组层及层中的一个分组进行下一步分组
+     *
+     * @param level       给定分组层
+     * @param originGroup 层中的一个分组
+     * @param left        originGroup分出的第一个组
+     * @param right       originGroup分出的第二个组
+     */
+    private static void divideGroup(List<Group> level, Group originGroup, Set<Integer> left, Set<Integer> right) {
+        boolean[] match = new boolean[column - 1];
+        //按第一个来分组，若与第一个状态等价则放在左边组，不等价则分为右边组
+        int first = -1;
+        for (int currentId : originGroup.getStates()) {
+            if (first == -1) {
+                first = currentId;
+                left.add(currentId);
+                continue;
+            } else {
+                for (int j = 1; j < column; j++) {
+                    if (table[first][j] == table[currentId][j]) {
+                        match[j - 1] = true;
+                        continue;
+                    }
+                    for (Group up : level) {
+                        if (up.getStates().contains(table[first][j]) && up.getStates().contains(table[currentId][j])) {
+                            match[j - 1] = true;
+                            break;
+                        }
+                    }
+                }
+
+                boolean equivalent = true;
+                for (boolean b : match) {
+                    if (b == false) {
+                        equivalent = false;
+                        break;
+                    }
+                }
+
+                if (equivalent) {
+                    left.add(currentId);
+                } else {
+                    right.add(currentId);
+                }
+
+            }
+        }
+    }
+
+    private static boolean checkStrong(Set<Integer> group) {
+        boolean isStrong = true;
+        int first = -1;
+        for (Integer id : group) {
+            if (first == -1) {
+                first = id;
+                continue;
+            }
+            for (int j = 1; j < column; j++) {
+                if (table[first][j] != table[id][j]) {
+                    isStrong = false;
+                    break;
+                }
+            }
+            if (!isStrong) {
+                break;
+            }
+        }
+        return isStrong;
+    }
+
     public static void main(String[] args) {
-//        String s = Analyzer.addDotToRE("(a|b)*abb(a|b)*");
+//        String s = Lex.Analyzer.addDotToRE("(a|b)*abb*");
 //        System.out.println(nfa.getNfaStates().size());
 
-        NFA nfa = Analyzer.REToNFA("(a|b)*a");
-//        for (State s : nfa.getNfaStates()) {
+//        NFA nfa = Analyzer.REToNFA("(a|b)*a");
+        NFA nfa = Analyzer.REToNFA("(a|b)*abb*");
+//        for (Lex.State s : nfa.getNfaStates()) {
 //            s.print();
 //            System.out.println();
 //        }
 //        System.out.println(s);
 
-//        Set<State> originState = new HashSet<State>();
+//        Set<Lex.State> originState = new HashSet<Lex.State>();
 //        originState.add(nfa.getNfaStates().getFirst());
-//        Set<State> states = Analyzer.epsilonClosure(originState);
-//        Set<State> states1 = Analyzer.addTransition('a', states);
-//        for (State s : states) {
-//            System.out.print(s.getStateId() + " ");
+//        Set<Lex.State> states = Lex.Analyzer.epsilonClosure(originState);
+//        Set<Lex.State> states1 = Lex.Analyzer.addTransition('a', states);
+//        for (Lex.State s : states) {
+//            System.out.print(s.getStates() + " ");
 //        }
 //        System.out.println();
 //
-//        for (State s : states1) {
-//            System.out.print(s.getStateId() + " ");
+//        for (Lex.State s : states1) {
+//            System.out.print(s.getStates() + " ");
 //        }
 
         DFA dfa = Analyzer.NFAToDFA(nfa);
-        System.out.println(dfa.getDfaStates().size());
+//        int[][] table = Lex.Analyzer.DFATable(dfa);
+
+        int[][] table = Analyzer.DFAToDFAO(dfa);
+        for (int i = 0; i < table.length; i++) {
+            for (int j = 0; j < table[0].length; j++) {
+                System.out.print(table[i][j] + " ");
+            }
+            System.out.println();
+        }
+//        System.out.println(dfa.getDfaStates().size());
     }
 }
