@@ -1,31 +1,95 @@
 package Lex;
 
+import Common.Type;
+
 import java.util.*;
 
 /**
  * Created by vivian on 2017/11/1.
  */
 public class Analyzer {
+    //.l文件的位置
+    private static final String L_PATH = "/Users/vivian/Desktop/lexicalAnalyzer/src/main/resources/re.l";
+
+    //转换表文件的位置
+    private static final String TABLE_PATH = "table.t";
+
     private static int stateId = 0;
     private static Stack<Character> operators = new Stack<Character>();
     private static Stack<NFA> nfas = new Stack<NFA>();
     private static Set<Character> inputSymbol = new HashSet<Character>();
 
     //关于DFA转换表的一些变量
-    private static int column = 3;
+    private static int column;
     private static int row;
     private static int[][] table;
+
     //为了优化方便，统一用id来代表DFA中的每个状态，需要的时候再通过id得到state
     private static Map<Integer, State> states = new HashMap<Integer, State>();
 
-    private static NFA REToNFA(String re) {
+    // 记录最终状态
+    // key ----- 最终状态号
+    // value ----- 最终状态表征的token type
+    private static HashMap<Integer, String> finalStates = new HashMap<Integer, String>();
+
+    private static void start() {
+        List<String> REs = IOHelper.readLFile(L_PATH);
+//        for (String s : REs) {
+//            System.out.println(s);
+//        }
+        inputSymbol.add('a');
+        inputSymbol.add('b');
+        inputSymbol.add('1');
+        inputSymbol.add('2');
+        inputSymbol.add('+');
+
+        NFA nfa = mergeNFA(REs);
+        System.out.println("nfa状态数：" + nfa.getNfaStates().size());
+        DFA dfa = NFAToDFA(nfa);
+        System.out.println("dfa状态数：" + dfa.getDfaStates().size());
+        int[][] table = DFATable(dfa);
+        for (int i = 0; i < table.length; i++) {
+            for (int j = 0; j < table[0].length; j++) {
+                System.out.print(table[i][j] + " ");
+            }
+            System.out.println();
+        }
+    }
+
+    private static NFA mergeNFA(List<String> REs) {
+        Stack<NFA> tempNfas = new Stack<NFA>();
+        for (int i = 0; i < REs.size(); i++) {
+            NFA tempNFA = REToNFASingle(REs.get(i), Type.getType(i));
+            tempNfas.push(tempNFA);
+        }
+
+        if (nfas.empty()) {
+            while (!tempNfas.empty()) {
+                NFA nfa = tempNfas.pop();
+                nfas.push(nfa);
+            }
+        } else {
+            System.out.println("ERROR!");
+        }
+
+        int count = nfas.size();
+        for (int i = 0; i < count - 1; i++) {
+            union();
+        }
+        NFA finalNFA = nfas.pop();
+
+        return finalNFA;
+    }
+
+    private static NFA REToNFASingle(String re, String type) {
         re = addDotToRE(re);
+//        System.out.println(re);
 
         nfas.clear();
         operators.clear();
 
         for (int i = 0; i < re.length(); i++) {
-            if (isLetter(re.charAt(i))) {
+            if (isLetter(re.charAt(i)) || isNum(re.charAt(i)) || isOperator(re.charAt(i))) {
                 createNFA(re.charAt(i));
             } else if (operators.empty()) {
                 operators.push(re.charAt(i));
@@ -39,8 +103,6 @@ public class Analyzer {
                 operators.pop();
             } else {
                 //若栈顶运算符的优先级高于新出现的运算符的优先级，就执行运算
-//                Lex.Operator o = Lex.Operator.getOperator('|');
-//                int ii = Lex.Operator.getPrivilege(o);
                 while (!operators.empty() && Operator.getPrivilege(Operator.getOperator(operators.peek())) >= Operator.getPrivilege(Operator.getOperator(re.charAt(i)))) {
                     doOperation();
                 }
@@ -54,9 +116,9 @@ public class Analyzer {
 
         NFA nfa = nfas.pop();
 
-        //指定终态为接受态
+        //指定终态为接受态，并打上类型标记
         nfa.getNfaStates().getLast().setAcceptState(true);
-
+        finalStates.put(nfa.getNfaStates().getLast().getStateId(), type);
         return nfa;
     }
 
@@ -65,17 +127,17 @@ public class Analyzer {
         String newRE = "";
 
         for (int i = 0; i < re.length() - 1; i++) {
-            if (isLetter(re.charAt(i)) && isLetter(re.charAt(i + 1))) {
+            if (isSymbol(re.charAt(i)) && isSymbol(re.charAt(i + 1))) {
                 newRE = newRE + re.charAt(i) + '.';
-            } else if (isLetter(re.charAt(i)) && re.charAt(i + 1) == '(') {
+            } else if (isSymbol(re.charAt(i)) && re.charAt(i + 1) == '(') {
                 newRE = newRE + re.charAt(i) + '.';
-            } else if (re.charAt(i) == ')' && isLetter(re.charAt(i + 1))) {
+            } else if (re.charAt(i) == ')' && isSymbol(re.charAt(i + 1))) {
                 newRE = newRE + re.charAt(i) + '.';
             } else if (re.charAt(i) == ')' && re.charAt(i + 1) == '(') {
                 newRE = newRE + re.charAt(i) + '.';
             } else if (re.charAt(i) == '*' && re.charAt(i + 1) == '(') {
                 newRE = newRE + re.charAt(i) + '.';
-            } else if (re.charAt(i) == '*' && isLetter(re.charAt(i + 1))) {
+            } else if (re.charAt(i) == '*' && isSymbol(re.charAt(i + 1))) {
                 newRE = newRE + re.charAt(i) + '.';
             } else {
                 newRE = newRE + re.charAt(i);
@@ -89,6 +151,33 @@ public class Analyzer {
     //判断是不是字母
     private static boolean isLetter(Character c) {
         if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    //判断是不是数字
+    private static boolean isNum(Character c) {
+        if (c >= '0' && c <= '9') {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    //判断是不是运算符（加减乘除）
+    private static boolean isOperator(Character c) {
+        if (c == '+') {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    //letter, number, operator 都是symbol
+    private static boolean isSymbol(Character c) {
+        if (isOperator(c) || isNum(c) || isLetter(c)) {
             return true;
         } else {
             return false;
@@ -213,8 +302,6 @@ public class Analyzer {
         DFA dfa = new DFA();
         stateId = 0;
         LinkedList<State> unHandledState = new LinkedList<State>();
-        inputSymbol.add('a');
-        inputSymbol.add('b');
 
         //DFA的第一个状态
         Set<State> firstStateSet = new HashSet<State>();
@@ -231,6 +318,11 @@ public class Analyzer {
             State currentState = unHandledState.removeFirst();
             for (char c : inputSymbol) {
                 Set<State> set = addTransition(c, currentState.getStatesForDFA());
+                if (set.size() == 0) {
+                    currentState.setNextState(c, new State(-10));
+                    continue;
+                }
+
                 set = epsilonClosure(set);
                 //用于判断状态是否重复的变量
                 boolean exist = false;
@@ -264,8 +356,8 @@ public class Analyzer {
                     currentState.setNextState(c, repeatState);
                 }
             }
-
         }
+
 
         return dfa;
 
@@ -290,6 +382,7 @@ public class Analyzer {
         return originState;
     }
 
+    //寻找某个状态通过某个symbol转换到的下一个状态
     private static Set<State> addTransition(char symbol, Set<State> originState) {
         Set<State> transState = new HashSet<State>();
         for (State s : originState) {
@@ -311,11 +404,17 @@ public class Analyzer {
         }
 
         row = states.size();
+        column = inputSymbol.size()+1;
         table = new int[row][column];
 
         //制表
         Character[] symbols = new Character[inputSymbol.size()];
         inputSymbol.toArray(symbols);
+        for (int i=0;i<symbols.length;i++) {
+            System.out.print(symbols[i] + " ");
+        }
+        System.out.println();
+        System.out.println();
         for (int i = 0; i < row; i++) {
             //每行的第一列是所有的DFA状态，依次排列
             table[i][0] = i;
@@ -323,7 +422,8 @@ public class Analyzer {
             for (int j = 1; j < column; j++) {
                 char symbol = symbols[j - 1];
                 State originState = states.get(i);
-                int transStateID = originState.getNextStatesBySymbol(symbol).get(0).getStateId();
+                ArrayList<State> nextStates = originState.getNextStatesBySymbol(symbol);
+                int transStateID = nextStates.get(0).getStateId();
                 table[i][j] = transStateID;
             }
         }
@@ -408,24 +508,24 @@ public class Analyzer {
         int newColumn = 0;
 
         //先填充新表包含的状态，即转换表的第一列
-        for (int i=0;i<row;i++) {
+        for (int i = 0; i < row; i++) {
             if (!redundantIds.contains(table[i][0])) {
                 newTable[newRow][0] = table[i][0];
                 newRow++;
             }
         }
 
-        for (int i=0;i<newRow;i++) {
+        for (int i = 0; i < newRow; i++) {
             int currentId = newTable[i][0];
             int beforeRow = 0;
-            for (int n = 0;n<row;n++) {
+            for (int n = 0; n < row; n++) {
                 if (table[n][0] == currentId) {
                     beforeRow = n;
                     break;
                 }
             }
 
-            for (int j=1;j<column;j++) {
+            for (int j = 1; j < column; j++) {
                 int stateId = table[beforeRow][j];
                 if (!redundantIds.contains(stateId)) {
                     newTable[i][j] = stateId;
@@ -510,11 +610,13 @@ public class Analyzer {
     }
 
     public static void main(String[] args) {
-//        String s = Lex.Analyzer.addDotToRE("(a|b)*abb*");
+//        String s = Lex.Analyzer.addDotToRE("(a|b)*abb(a|b)*");
 //        System.out.println(nfa.getNfaStates().size());
 
-//        NFA nfa = Analyzer.REToNFA("(a|b)*a");
-        NFA nfa = Analyzer.REToNFA("(a|b)*abb*");
+//        Analyzer.start();
+        Analyzer.start();
+//        NFA nfa = Analyzer.REToNFASingle("(1|2)*", "Int");
+//        System.out.println(nfas.empty());
 //        for (Lex.State s : nfa.getNfaStates()) {
 //            s.print();
 //            System.out.println();
@@ -534,16 +636,11 @@ public class Analyzer {
 //            System.out.print(s.getStates() + " ");
 //        }
 
-        DFA dfa = Analyzer.NFAToDFA(nfa);
+//        DFA dfa = Analyzer.NFAToDFA(nfa);
 //        int[][] table = Lex.Analyzer.DFATable(dfa);
 
-        int[][] table = Analyzer.DFAToDFAO(dfa);
-        for (int i = 0; i < table.length; i++) {
-            for (int j = 0; j < table[0].length; j++) {
-                System.out.print(table[i][j] + " ");
-            }
-            System.out.println();
-        }
+//        int[][] table = Analyzer.DFAToDFAO(dfa);
+
 //        System.out.println(dfa.getDfaStates().size());
     }
 }
