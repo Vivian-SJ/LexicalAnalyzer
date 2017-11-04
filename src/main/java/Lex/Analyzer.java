@@ -16,6 +16,7 @@ public class Analyzer {
     private static Stack<Character> operators = new Stack<Character>();
     private static Stack<NFA> nfas = new Stack<NFA>();
     private static Set<Character> inputSymbol = new HashSet<Character>();
+    private static Character[] symbols;
 
     //关于DFA转换表的一些变量
     private static int column;
@@ -27,8 +28,9 @@ public class Analyzer {
 
     // 记录最终状态
     // key ----- 最终状态号
-    // value ----- 最终状态表征的token type, 0代表ID， 1代表INTEGER, 2代表OPERATOR
-    private static HashMap<Integer, Integer> finalStates = new HashMap<Integer, Integer>();
+    // value ----- 最终状态表征的token type, -1代表ID， -2代表INTEGER, -3代表OPERATOR
+    private static HashMap<Integer, Integer> finalNFAStates = new HashMap<Integer, Integer>();
+    private static HashMap<Integer, Integer> finalDFAStates = new HashMap<Integer, Integer>();
 
     private static void start() {
         List<String> REs = IOHelper.readLFile(L_PATH);
@@ -53,8 +55,8 @@ public class Analyzer {
 //            System.out.println();
 //        }
 
-//        System.out.println("Finalstates:" + finalStates.size());
-//        for (HashMap.Entry entry : finalStates.entrySet()) {
+//        System.out.println("Finalstates:" + finalNFAStates.size());
+//        for (HashMap.Entry entry : finalNFAStates.entrySet()) {
 //            System.out.println("states: " + entry.getKey() + "type" + entry.getValue());
 //        }
 
@@ -66,13 +68,14 @@ public class Analyzer {
 //            System.out.println();
 //        }
 
-        IOHelper.buildTableFile(table, table.length, table[0].length, TABLE_PATH);
+        char[] symbolLine = createSymbolLine();
+        IOHelper.buildTableFile(table, table.length, table[0].length, symbolLine, TABLE_PATH);
     }
 
     private static NFA mergeNFA(List<String> REs) {
         Stack<NFA> tempNfas = new Stack<NFA>();
         for (int i = 0; i < REs.size(); i++) {
-            NFA tempNFA = REToNFASingle(REs.get(i), i);
+            NFA tempNFA = REToNFASingle(REs.get(i), 0-(i+1));
             tempNfas.push(tempNFA);
         }
 
@@ -131,7 +134,7 @@ public class Analyzer {
 
         //指定终态为接受态，并打上类型标记
         nfa.getNfaStates().getLast().setAcceptState(true);
-        finalStates.put(nfa.getNfaStates().getLast().getStateId(), type);
+        finalNFAStates.put(nfa.getNfaStates().getLast().getStateId(), type);
         return nfa;
     }
 
@@ -421,7 +424,7 @@ public class Analyzer {
         table = new int[row][column];
 
         //制表
-        Character[] symbols = new Character[inputSymbol.size()];
+        symbols = new Character[inputSymbol.size()];
         inputSymbol.toArray(symbols);
 //        for (int i=0;i<symbols.length;i++) {
 //            System.out.print(symbols[i] + " ");
@@ -448,7 +451,7 @@ public class Analyzer {
 
         //F表示终态，NF表示非终态
         List<Group> finalGroups = new ArrayList<Group>();
-        int count = finalStates.size();
+        int count = finalNFAStates.size();
 
         //finalGroups中，0代表ID， 1代表INTEGER, 2代表OPERATOR
         for (int i=0; i<count;i++) {
@@ -461,9 +464,10 @@ public class Analyzer {
         for (State s : dfa.getDfaStates()) {
             boolean end = false;
             for (State temp : s.getStatesForDFA()) {
-                if (finalStates.containsKey(temp.getStateId())) {
-                    int type = finalStates.get(temp.getStateId());
-                    finalGroups.get(type).getStates().add(s.getStateId());
+                if (finalNFAStates.containsKey(temp.getStateId())) {
+                    int type = finalNFAStates.get(temp.getStateId());
+                    finalGroups.get(-type-1).getStates().add(s.getStateId());
+                    finalDFAStates.put(s.getStateId(), type);
                     end = true;
                     break;
                 }
@@ -517,6 +521,7 @@ public class Analyzer {
         return table;
     }
 
+    //优化DFA之后更新表
     private static void updateTable(List<Group> level) {
         Set<Integer> redundantIds = new HashSet<Integer>();
         Map<Integer, Integer> replace = new HashMap<Integer, Integer>();
@@ -569,7 +574,22 @@ public class Analyzer {
             }
         }
 
-        table = newTable;
+        table = signState(newTable);
+    }
+
+    //在优化后的表上，把各个终态用相应的type类型id代替，方便词法分析
+    private static int[][] signState(int[][] originTable) {
+        for (int i=0;i<originTable.length;i++) {
+            for (int j=1;j<originTable[0].length;j++) {
+                if (originTable[i][j] == -10) {
+                    continue;
+                }
+                if (finalDFAStates.containsKey(originTable[i][j])) {
+                    originTable[i][j] = finalDFAStates.get(originTable[i][j]);
+                }
+            }
+        }
+        return originTable;
     }
 
     /**
@@ -642,6 +662,15 @@ public class Analyzer {
         return isStrong;
     }
 
+    //在转换表文件中加一行表示标识符，I表示状态ID，其他表示使状态发生转换的标识符（a,b等）
+    private static char[] createSymbolLine() {
+        char[] symbolLine = new char[symbols.length+1];
+        symbolLine[0] = 'I';
+        for (int i = 1;i<symbolLine.length;i++) {
+            symbolLine[i] = symbols[i-1];
+        }
+        return symbolLine;
+    }
     public static void main(String[] args) {
 //        String s = Lex.Analyzer.addDotToRE("(a|b)*abb(a|b)*");
 //        System.out.println(nfa.getNfaStates().size());

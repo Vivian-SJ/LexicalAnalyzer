@@ -22,11 +22,11 @@ public class Type {
     //通过数字编号获得type名称
     public static String getType(int i) {
         switch (i) {
-            case 0:
+            case -1:
                 return "ID";
-            case 1:
+            case -2:
                 return "INTEGER";
-            case 2:
+            case -3:
                 return "OPERATOR";
             default:
                 System.out.println("WRONG RE !");
