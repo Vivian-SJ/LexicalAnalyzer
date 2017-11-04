@@ -1,7 +1,5 @@
 package Lex;
 
-import Common.Type;
-
 import java.util.*;
 
 /**
@@ -12,7 +10,7 @@ public class Analyzer {
     private static final String L_PATH = "/Users/vivian/Desktop/lexicalAnalyzer/src/main/resources/re.l";
 
     //转换表文件的位置
-    private static final String TABLE_PATH = "table.t";
+    private static final String TABLE_PATH = "/Users/vivian/Desktop/lexicalAnalyzer/src/main/resources/table.t";
 
     private static int stateId = 0;
     private static Stack<Character> operators = new Stack<Character>();
@@ -29,8 +27,8 @@ public class Analyzer {
 
     // 记录最终状态
     // key ----- 最终状态号
-    // value ----- 最终状态表征的token type
-    private static HashMap<Integer, String> finalStates = new HashMap<Integer, String>();
+    // value ----- 最终状态表征的token type, 0代表ID， 1代表INTEGER, 2代表OPERATOR
+    private static HashMap<Integer, Integer> finalStates = new HashMap<Integer, Integer>();
 
     private static void start() {
         List<String> REs = IOHelper.readLFile(L_PATH);
@@ -44,22 +42,37 @@ public class Analyzer {
         inputSymbol.add('+');
 
         NFA nfa = mergeNFA(REs);
-        System.out.println("nfa状态数：" + nfa.getNfaStates().size());
+//        System.out.println("nfa状态数：" + nfa.getNfaStates().size());
         DFA dfa = NFAToDFA(nfa);
-        System.out.println("dfa状态数：" + dfa.getDfaStates().size());
-        int[][] table = DFATable(dfa);
-        for (int i = 0; i < table.length; i++) {
-            for (int j = 0; j < table[0].length; j++) {
-                System.out.print(table[i][j] + " ");
-            }
-            System.out.println();
-        }
+//        System.out.println("dfa状态数：" + dfa.getDfaStates().size());
+//        int[][] table = DFATable(dfa);
+//        for (int i = 0; i < table.length; i++) {
+//            for (int j = 0; j < table[0].length; j++) {
+//                System.out.print(table[i][j] + " ");
+//            }
+//            System.out.println();
+//        }
+
+//        System.out.println("Finalstates:" + finalStates.size());
+//        for (HashMap.Entry entry : finalStates.entrySet()) {
+//            System.out.println("states: " + entry.getKey() + "type" + entry.getValue());
+//        }
+
+        table = DFAToDFAO(dfa);
+//        for (int i = 0; i < table.length; i++) {
+//            for (int j = 0; j < table[0].length; j++) {
+//                System.out.print(table[i][j] + " ");
+//            }
+//            System.out.println();
+//        }
+
+        IOHelper.buildTableFile(table, table.length, table[0].length, TABLE_PATH);
     }
 
     private static NFA mergeNFA(List<String> REs) {
         Stack<NFA> tempNfas = new Stack<NFA>();
         for (int i = 0; i < REs.size(); i++) {
-            NFA tempNFA = REToNFASingle(REs.get(i), Type.getType(i));
+            NFA tempNFA = REToNFASingle(REs.get(i), i);
             tempNfas.push(tempNFA);
         }
 
@@ -81,7 +94,7 @@ public class Analyzer {
         return finalNFA;
     }
 
-    private static NFA REToNFASingle(String re, String type) {
+    private static NFA REToNFASingle(String re, int type) {
         re = addDotToRE(re);
 //        System.out.println(re);
 
@@ -342,12 +355,12 @@ public class Analyzer {
                     stateId++;
 
                     //判断该状态里是否包含终态
-                    for (State s : newState.getStatesForDFA()) {
-                        if (s.isAcceptState()) {
-                            newState.setAcceptState(true);
-                            break;
-                        }
-                    }
+//                    for (State s : newState.getStatesForDFA()) {
+//                        if (s.isAcceptState()) {
+//                            newState.setAcceptState(true);
+//                            break;
+//                        }
+//                    }
 
                     dfa.getDfaStates().add(newState);
                     unHandledState.add(newState);
@@ -410,11 +423,9 @@ public class Analyzer {
         //制表
         Character[] symbols = new Character[inputSymbol.size()];
         inputSymbol.toArray(symbols);
-        for (int i=0;i<symbols.length;i++) {
-            System.out.print(symbols[i] + " ");
-        }
-        System.out.println();
-        System.out.println();
+//        for (int i=0;i<symbols.length;i++) {
+//            System.out.print(symbols[i] + " ");
+//        }
         for (int i = 0; i < row; i++) {
             //每行的第一列是所有的DFA状态，依次排列
             table[i][0] = i;
@@ -436,21 +447,44 @@ public class Analyzer {
         DFATable(dfa);
 
         //F表示终态，NF表示非终态
-        Group F = new Group();
+        List<Group> finalGroups = new ArrayList<Group>();
+        int count = finalStates.size();
+
+        //finalGroups中，0代表ID， 1代表INTEGER, 2代表OPERATOR
+        for (int i=0; i<count;i++) {
+            Group F = new Group();
+            finalGroups.add(F);
+        }
         Group NF = new Group();
 
-        //把DFA分为初始的终态和非终态
+        //把DFA分为初始的不同终态（如ID, INTEGER, OPERATOR)和非终态
         for (State s : dfa.getDfaStates()) {
-            if (s.isAcceptState()) {
-                F.getStates().add(s.getStateId());
-            } else {
+            boolean end = false;
+            for (State temp : s.getStatesForDFA()) {
+                if (finalStates.containsKey(temp.getStateId())) {
+                    int type = finalStates.get(temp.getStateId());
+                    finalGroups.get(type).getStates().add(s.getStateId());
+                    end = true;
+                    break;
+                }
+            }
+            if (!end) {
                 NF.getStates().add(s.getStateId());
             }
+//            if (s.isAcceptState()) {
+//                NF.getStates().add(s.getStateId());
+//            } else {
+//                NF.getStates().add(s.getStateId());
+//            }
         }
 
         List<Group> level = new ArrayList<Group>();
-        level.add(F);
+        level.addAll(finalGroups);
         level.add(NF);
+
+//        for (Group g : level) {
+//            System.out.println(g.getStates().size());
+//        }
 
         //递归进行分组
         List<Group> newLevel = level;
@@ -505,7 +539,6 @@ public class Analyzer {
 
         int[][] newTable = new int[row - redundantIds.size()][column];
         int newRow = 0;
-        int newColumn = 0;
 
         //先填充新表包含的状态，即转换表的第一列
         for (int i = 0; i < row; i++) {

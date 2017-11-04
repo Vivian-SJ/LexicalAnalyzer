@@ -44,4 +44,8 @@ public class Type {
     public static boolean isKeyword(String text) {
         return keywords.contains(text);
     }
+
+    public static int getTypeNum() {
+        return typeList.size();
+    }
 }

@@ -2,10 +2,7 @@ package Lex;
 
 import Common.Type;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,6 +10,7 @@ import java.util.List;
  * Created by vivian on 2017/11/4.
  */
 public class IOHelper {
+    private static String[] keywords;
     /**
      * 读取.l文件
      *
@@ -31,16 +29,47 @@ public class IOHelper {
                     result.add(express[1].trim());
                 }
                 if (re.startsWith("%")) {
-                    String[] keywords = re.substring(1).split(",");
-                    for (String s : keywords) {
-                        Type.addKeywords(s);
-                    }
+                    keywords = re.substring(1).split(",");
                 }
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-
         return result;
+    }
+
+    /**
+     * 创建.t表文件
+     *
+     * @param table  表数组
+     * @param row    表的行数
+     * @param column 表的列数
+     * @param path   .t表文件的路径
+     */
+    public static void buildTableFile(int[][] table, int row, int column, String path) {
+        FileWriter writer = null;
+        try {
+            writer = new FileWriter(new File(path));
+            writer.write(row + " " + column + "\n");
+            for (int i = 0; i < row; i++) {
+                for (int j = 0; j < column; j++) {
+                    writer.write(table[i][j] + " ");
+                }
+                writer.write("\n");
+            }
+
+            for (int i = 0; i < Type.getTypeNum(); i++) {
+                writer.write(Type.getType(i) + " ");
+            }
+            writer.write('\n');
+            writer.write("@ ");
+            for (String keyword : keywords) {
+                writer.write(keyword.trim() + " ");
+            }
+            writer.flush();
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
