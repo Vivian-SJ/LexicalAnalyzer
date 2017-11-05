@@ -37,6 +37,8 @@ public class Controller {
 //        System.out.println(input);
         int pointer = 0;
         int state = 0;
+        int nextState = 0;
+        int first = -1;
 
         // for error handling
 //        int line = 1;
@@ -46,23 +48,41 @@ public class Controller {
         List<Token> result = new ArrayList<Token>();
         String current = "";
 
-        while (pointer < input.length()) {
+        while (pointer < input.length() - 1) {
             char c = input.charAt(pointer);
             current = current + c;
 //            BasicType basicType = BasicType.fromCharToType(c);
-            state = table[state][columnNum.get(c)];
+            if (first == -1) {
+                state = table[0][columnNum.get(c)];
+                first = 0;
+            } else {
+                state = findNextState(state, c);
+            }
+
+//            state = table[state][columnNum.get(c)];
 
             //System.out.println(c);
 
             //如果进入终态或出现错误
             if (state < 0) {
-                String finalType = Type.getType(state);
-
-                if (finalType.equals("ERROR")) {
+                if (state == -10) {
                     System.out.println("ERROR!");
-                    //System.out.println(c);
                     return null;
                 }
+
+                //要读取最长串
+                pointer++;
+                nextState = findNextState(state, input.charAt(pointer));
+                if (nextState!=-10) {
+                    continue;
+                } else {
+                    String finalType = Type.getType(state);
+                    addToken(result, current, finalType);
+                    current = "";
+                    first = -1;
+                }
+
+
 
 //                if (basicType == BasicType.DELIMITER) {
 //                    state = 0;
@@ -75,10 +95,7 @@ public class Controller {
 //                }
 
 
-                addToken(result, current, finalType);
-                pointer++;
-                current = "";
-                state = 0;
+//                pointer++;
             }
             // 继续在DFA中运行
             else {
@@ -94,6 +111,15 @@ public class Controller {
         }
 
         //处理结尾的一个字符
+        char c = input.charAt(input.length()-1);
+        state = findNextState(state, c);
+        if (state == -10) {
+            System.out.println("ERROR!");
+            return null;
+        }
+        current = current + c;
+        String finalType = Type.getType(state);
+        addToken(result, current, finalType);
 //        state = table[state][BasicType.EMPTY.ordinal()];
 //        String finalType = Type.intToType(state);
 //        if (finalType.equals("ERROR")) {
@@ -107,6 +133,18 @@ public class Controller {
         return result;
     }
 
+    private int findNextState(int currentState, char c) {
+        int state = -10;
+        for (int i=0;i<table.length;i++) {
+            if (table[i][0] == currentState) {
+                if (table[i][columnNum.get(c)] != -10) {
+                    state = table[i][columnNum.get(c)];
+                    break;
+                }
+            }
+        }
+        return state;
+    }
     /**
      * 向结果集中添加一个token
      * @param result 结果集

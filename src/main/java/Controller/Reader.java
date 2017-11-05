@@ -14,7 +14,6 @@ public class Reader {
         try {
             BufferedReader reader = new BufferedReader(new FileReader(new File(fileName)));
             String s = reader.readLine().replace(" ", "");
-            s = s.substring(0,s.length()-1);
             symbolLine = s.toCharArray();
         } catch (Exception e) {
             e.printStackTrace();
