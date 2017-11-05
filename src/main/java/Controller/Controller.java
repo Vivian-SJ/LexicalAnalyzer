@@ -52,7 +52,7 @@ public class Controller {
 
         while (pointer < input.length() - 1) {
             char c = input.charAt(pointer);
-            if (!columnNum.containsKey(c)) {
+            if (!columnNum.containsKey(getChar(c))) {
                 System.out.println("ERROR!");
                 return;
             }
