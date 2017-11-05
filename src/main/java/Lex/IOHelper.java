@@ -24,7 +24,7 @@ public class IOHelper {
             String re = "";
             while ((re = reader.readLine()) != null) {
                 if (re.startsWith("$")) {
-                    String[] express = re.substring(1).split("=");
+                    String[] express = re.substring(1).split(":");
                     Type.addType(express[0].trim());
                     result.add(express[1].trim());
                 }

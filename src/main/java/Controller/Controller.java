@@ -117,7 +117,7 @@ public class Controller {
         } else {
             state = findNextState(state, c);
         }
-        state = findNextState(state, c);
+//        state = findNextState(state, c);
         if (state == -10) {
             System.out.println("ERROR!");
             return null;

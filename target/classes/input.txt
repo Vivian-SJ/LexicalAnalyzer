@@ -1,1 +1,1 @@
-a+b+private
+System.out.printlna=1+2;

@@ -37,11 +37,11 @@ public class Analyzer {
 //        for (String s : REs) {
 //            System.out.println(s);
 //        }
-        inputSymbol.add('a');
-        inputSymbol.add('b');
-        inputSymbol.add('1');
-        inputSymbol.add('2');
-        inputSymbol.add('+');
+//        inputSymbol.add('a');
+//        inputSymbol.add('b');
+//        inputSymbol.add('1');
+//        inputSymbol.add('2');
+//        inputSymbol.add('+');
 
         NFA nfa = mergeNFA(REs);
 //        System.out.println("nfa状态数：" + nfa.getNfaStates().size());
@@ -75,7 +75,7 @@ public class Analyzer {
     private static NFA mergeNFA(List<String> REs) {
         Stack<NFA> tempNfas = new Stack<NFA>();
         for (int i = 0; i < REs.size(); i++) {
-            NFA tempNFA = REToNFASingle(REs.get(i), 0-(i+1));
+            NFA tempNFA = REToNFASingle(REs.get(i), 0 - (i + 1));
             tempNfas.push(tempNFA);
         }
 
@@ -105,9 +105,13 @@ public class Analyzer {
         operators.clear();
 
         for (int i = 0; i < re.length(); i++) {
-            if (isLetter(re.charAt(i)) || isNum(re.charAt(i)) || isOperator(re.charAt(i))) {
+            if (isLetter(re.charAt(i)) || isNum(re.charAt(i)) || isOperator(re.charAt(i)) || isDelimiter(re.charAt(i))) {
                 createNFA(re.charAt(i));
                 inputSymbol.add(re.charAt(i));
+            } else if (re.charAt(i) == '\\' && isSpecialDelimiter(re.charAt(i + 1))) {
+                createNFA(re.charAt(i + 1));
+                inputSymbol.add(re.charAt(i + 1));
+                i++;
             } else if (operators.empty()) {
                 operators.push(re.charAt(i));
             } else if (re.charAt(i) == '(') {
@@ -185,7 +189,23 @@ public class Analyzer {
 
     //判断是不是运算符（加减乘除）
     private static boolean isOperator(Character c) {
-        if (c == '+') {
+        if ((c == '+')|| (c == '-') || (c == '=')) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private static boolean isDelimiter(Character c) {
+        if ((c == ';') || (c == ',') || (c == '.')) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private static boolean isSpecialDelimiter(Character c) {
+        if ((c == '(') || (c == ')')) {
             return true;
         } else {
             return false;
@@ -421,7 +441,7 @@ public class Analyzer {
         }
 
         row = states.size();
-        column = inputSymbol.size()+1;
+        column = inputSymbol.size() + 1;
         table = new int[row][column];
 
         //制表
@@ -455,7 +475,7 @@ public class Analyzer {
         int count = finalNFAStates.size();
 
         //finalGroups中，0代表ID， 1代表INTEGER, 2代表OPERATOR
-        for (int i=0; i<count;i++) {
+        for (int i = 0; i < count; i++) {
             Group F = new Group();
             finalGroups.add(F);
         }
@@ -467,7 +487,7 @@ public class Analyzer {
             for (State temp : s.getStatesForDFA()) {
                 if (finalNFAStates.containsKey(temp.getStateId())) {
                     int type = finalNFAStates.get(temp.getStateId());
-                    finalGroups.get(-type-1).getStates().add(s.getStateId());
+                    finalGroups.get(-type - 1).getStates().add(s.getStateId());
                     finalDFAStates.put(s.getStateId(), type);
                     end = true;
                     break;
@@ -580,8 +600,8 @@ public class Analyzer {
 
     //在优化后的表上，把各个终态用相应的type类型id代替，方便词法分析
     private static int[][] signState(int[][] originTable) {
-        for (int i=0;i<originTable.length;i++) {
-            for (int j=0;j<originTable[0].length;j++) {
+        for (int i = 0; i < originTable.length; i++) {
+            for (int j = 0; j < originTable[0].length; j++) {
                 if (originTable[i][j] == -10) {
                     continue;
                 }
@@ -665,13 +685,14 @@ public class Analyzer {
 
     //在转换表文件中加一行表示标识符，I表示状态ID，其他表示使状态发生转换的标识符（a,b等）
     private static char[] createSymbolLine() {
-        char[] symbolLine = new char[symbols.length+1];
+        char[] symbolLine = new char[symbols.length + 1];
         symbolLine[0] = 'I';
-        for (int i = 1;i<symbolLine.length;i++) {
-            symbolLine[i] = symbols[i-1];
+        for (int i = 1; i < symbolLine.length; i++) {
+            symbolLine[i] = symbols[i - 1];
         }
         return symbolLine;
     }
+
     public static void main(String[] args) {
 //        String s = Lex.Analyzer.addDotToRE("(a|b)*abb(a|b)*");
 //        System.out.println(nfa.getNfaStates().size());
