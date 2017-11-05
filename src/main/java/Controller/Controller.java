@@ -52,6 +52,10 @@ public class Controller {
 
         while (pointer < input.length() - 1) {
             char c = input.charAt(pointer);
+            if (!columnNum.containsKey(c)) {
+                System.out.println("ERROR!");
+                return;
+            }
             current = current + c;
 
             if (first == -1) {
@@ -135,12 +139,16 @@ public class Controller {
 
     //该方法主要用于转换一些特殊的符号
     private char getChar(char c) {
-      switch (c) {
-          case ' ': return '~';
-          case '\t': return '!';
-          case '\n': return '@';
-          default:return c;
-      }
+        switch (c) {
+            case ' ':
+                return '~';
+            case '\t':
+                return '!';
+            case '\n':
+                return '@';
+            default:
+                return c;
+        }
     }
 
     /**
