@@ -107,6 +107,7 @@ public class Analyzer {
         for (int i = 0; i < re.length(); i++) {
             if (isLetter(re.charAt(i)) || isNum(re.charAt(i)) || isOperator(re.charAt(i))) {
                 createNFA(re.charAt(i));
+                inputSymbol.add(re.charAt(i));
             } else if (operators.empty()) {
                 operators.push(re.charAt(i));
             } else if (re.charAt(i) == '(') {

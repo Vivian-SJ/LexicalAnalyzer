@@ -25,7 +25,7 @@ public class Controller {
 
     public Controller() {
         char[] symbolLine = Reader.readSymbolLine(TABLE_PATH);
-        for (int i=1;i<symbolLine.length;i++) {
+        for (int i = 1; i < symbolLine.length; i++) {
             columnNum.put(symbolLine[i], i);
         }
         table = Reader.readTable(TABLE_PATH);
@@ -73,7 +73,7 @@ public class Controller {
                 //要读取最长串
                 pointer++;
                 nextState = findNextState(state, input.charAt(pointer));
-                if (nextState!=-10) {
+                if (nextState != -10 && state == nextState) {
                     continue;
                 } else {
                     String finalType = Type.getType(state);
@@ -81,7 +81,6 @@ public class Controller {
                     current = "";
                     first = -1;
                 }
-
 
 
 //                if (basicType == BasicType.DELIMITER) {
@@ -111,7 +110,13 @@ public class Controller {
         }
 
         //处理结尾的一个字符
-        char c = input.charAt(input.length()-1);
+        char c = input.charAt(input.length() - 1);
+        if (first == -1) {
+            state = table[0][columnNum.get(c)];
+            first = 0;
+        } else {
+            state = findNextState(state, c);
+        }
         state = findNextState(state, c);
         if (state == -10) {
             System.out.println("ERROR!");
@@ -135,7 +140,7 @@ public class Controller {
 
     private int findNextState(int currentState, char c) {
         int state = -10;
-        for (int i=0;i<table.length;i++) {
+        for (int i = 0; i < table.length; i++) {
             if (table[i][0] == currentState) {
                 if (table[i][columnNum.get(c)] != -10) {
                     state = table[i][columnNum.get(c)];
@@ -145,15 +150,17 @@ public class Controller {
         }
         return state;
     }
+
     /**
      * 向结果集中添加一个token
-     * @param result 结果集
-     * @param now 当前字符串
+     *
+     * @param result    结果集
+     * @param now       当前字符串
      * @param finalType 判定的类型
      */
     private void addToken(List<Token> result, String now, String finalType) {
         if (Type.isKeyword(now)) {
-//            result.add(new Token(now, KEYWORD_NAME));
+            result.add(new Token(now, "KEYWORD"));
         } else {
             result.add(new Token(now, finalType));
         }

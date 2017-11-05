@@ -1,5 +1,5 @@
 # RE start:
-$ ID = (a|b)*abb*
+$ ID = (a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z)*
 $ INTEGER = (1|2)*
 $ OPERATOR = +
 # RE end
