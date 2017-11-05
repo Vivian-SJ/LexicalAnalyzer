@@ -42,11 +42,6 @@ public class Controller {
         int nextState = 0;
         int first = -1;
 
-        // for error handling
-//        int line = 1;
-//        int loc = 1;
-        //
-
         List<Token> result = new ArrayList<Token>();
         String current = "";
 
@@ -75,6 +70,10 @@ public class Controller {
                 //要读取最长串
                 pointer++;
                 char temp = input.charAt(pointer);
+                if (!columnNum.containsKey(getChar(temp))) {
+                    System.out.println("ERROR!");
+                    return;
+                }
                 nextState = findNextState(state, getChar(temp));
                 if (nextState != -10 && state == nextState) {
                     continue;
@@ -88,17 +87,15 @@ public class Controller {
             // 继续在DFA中运行
             else {
                 pointer++;
-//                loc++;
             }
-
-//            if (c == '\n') {
-//                line++;
-//                loc = 1;
-//            }
         }
 
         //处理结尾的一个字符
         char c = input.charAt(input.length() - 1);
+        if (!columnNum.containsKey(getChar(c))) {
+            System.out.println("ERROR!");
+            return;
+        }
         current = current + c;
         if (first == -1) {
             state = table[0][columnNum.get(getChar(c))];
@@ -111,16 +108,7 @@ public class Controller {
         }
         String finalType = Type.getType(state);
         addToken(result, current, finalType);
-//        state = table[state][BasicType.EMPTY.ordinal()];
-//        String finalType = Type.intToType(state);
-//        if (finalType.equals("ERROR")) {
-//            errorHandling(line, loc);
-//            //System.out.println("!");
-//            return null;
-//        }
-//        addToken(result, current, finalType);
 
-//        return result;
         FileHelper.writeToken(result, OUTPUT_PATH);
     }
 
