@@ -34,7 +34,6 @@ public class Controller {
     //生成token序列
     public List<Token> generateToken() {
         String input = Reader.readInput(INPUT_PATH);
-//        System.out.println(input);
         int pointer = 0;
         int state = 0;
         int nextState = 0;
@@ -51,20 +50,13 @@ public class Controller {
         while (pointer < input.length() - 1) {
             char c = input.charAt(pointer);
             current = current + c;
-//            BasicType basicType = BasicType.fromCharToType(c);
-            if (c == ' ') {
-                c = '~';
-            }
+
             if (first == -1) {
-                state = table[0][columnNum.get(c)];
+                state = table[0][columnNum.get(getChar(c))];
                 first = 0;
             } else {
-                state = findNextState(state, c);
+                state = findNextState(state, getChar(c));
             }
-
-//            state = table[state][columnNum.get(c)];
-
-            //System.out.println(c);
 
             //如果进入终态或出现错误
             if (state < 0) {
@@ -76,10 +68,7 @@ public class Controller {
                 //要读取最长串
                 pointer++;
                 char temp = input.charAt(pointer);
-                if (temp == ' ') {
-                    temp = '~';
-                }
-                nextState = findNextState(state, temp);
+                nextState = findNextState(state, getChar(temp));
                 if (nextState != -10 && state == nextState) {
                     continue;
                 } else {
@@ -88,24 +77,9 @@ public class Controller {
                     current = "";
                     first = -1;
                 }
-
-
-//                if (basicType == BasicType.DELIMITER) {
-//                    state = 0;
-//                    if (!finalType.equals("ERROR")) {
-//                        addToken(result, current, finalType);
-//                        current = "";
-//                    }
-//                    pointer++;
-//                    continue;
-//                }
-
-
-//                pointer++;
             }
             // 继续在DFA中运行
             else {
-//                current = current + c;
                 pointer++;
 //                loc++;
             }
@@ -119,16 +93,11 @@ public class Controller {
         //处理结尾的一个字符
         char c = input.charAt(input.length() - 1);
         current = current + c;
-        if (c == ' ') {
-            c = '~';
-        }
         if (first == -1) {
-            state = table[0][columnNum.get(c)];
-            first = 0;
+            state = table[0][columnNum.get(getChar(c))];
         } else {
-            state = findNextState(state, c);
+            state = findNextState(state, getChar(c));
         }
-//        state = findNextState(state, c);
         if (state == -10) {
             System.out.println("ERROR!");
             return null;
@@ -143,7 +112,6 @@ public class Controller {
 //            return null;
 //        }
 //        addToken(result, current, finalType);
-        //
 
         return result;
     }
@@ -159,6 +127,16 @@ public class Controller {
             }
         }
         return state;
+    }
+
+    //该方法主要用于转换一些特殊的符号
+    private char getChar(char c) {
+      switch (c) {
+          case ' ': return '~';
+          case '\t': return '!';
+          case '\n': return '@';
+          default:return c;
+      }
     }
 
     /**

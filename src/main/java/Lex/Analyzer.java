@@ -34,39 +34,9 @@ public class Analyzer {
 
     private static void start() {
         List<String> REs = IOHelper.readLFile(L_PATH);
-//        for (String s : REs) {
-//            System.out.println(s);
-//        }
-//        inputSymbol.add('a');
-//        inputSymbol.add('b');
-//        inputSymbol.add('1');
-//        inputSymbol.add('2');
-//        inputSymbol.add('+');
-
         NFA nfa = mergeNFA(REs);
-//        System.out.println("nfa状态数：" + nfa.getNfaStates().size());
         DFA dfa = NFAToDFA(nfa);
-//        System.out.println("dfa状态数：" + dfa.getDfaStates().size());
-//        int[][] table = DFATable(dfa);
-//        for (int i = 0; i < table.length; i++) {
-//            for (int j = 0; j < table[0].length; j++) {
-//                System.out.print(table[i][j] + " ");
-//            }
-//            System.out.println();
-//        }
-
-//        System.out.println("Finalstates:" + finalNFAStates.size());
-//        for (HashMap.Entry entry : finalNFAStates.entrySet()) {
-//            System.out.println("states: " + entry.getKey() + "type" + entry.getValue());
-//        }
-
         table = DFAToDFAO(dfa);
-//        for (int i = 0; i < table.length; i++) {
-//            for (int j = 0; j < table[0].length; j++) {
-//                System.out.print(table[i][j] + " ");
-//            }
-//            System.out.println();
-//        }
 
         char[] symbolLine = createSymbolLine();
         IOHelper.buildTableFile(table, table.length, table[0].length, symbolLine, TABLE_PATH);
@@ -99,8 +69,6 @@ public class Analyzer {
 
     private static NFA REToNFASingle(String re, int type) {
         re = addDotToRE(re);
-//        System.out.println(re);
-
         nfas.clear();
         operators.clear();
 
@@ -189,7 +157,7 @@ public class Analyzer {
 
     //判断是不是运算符（加减乘除）
     private static boolean isOperator(Character c) {
-        if ((c == '+')|| (c == '-') || (c == '=') || (c=='{') || (c=='}')) {
+        if ((c == '+') || (c == '-') || (c == '=') || (c == '{') || (c == '}')) {
             return true;
         } else {
             return false;
@@ -197,7 +165,7 @@ public class Analyzer {
     }
 
     private static boolean isDelimiter(Character c) {
-        if ((c == ';') || (c == ',') || (c == '.') || (c=='~')) {
+        if ((c == ';') || (c == ',') || (c == '.') || (c == '~') || (c == '!') || (c == '@') || (c == '"') || (c == '\'')) {
             return true;
         } else {
             return false;
@@ -205,7 +173,7 @@ public class Analyzer {
     }
 
     private static boolean isSpecial(Character c) {
-        if ((c == '(') || (c == ')') || (c=='*') || (c=='/')) {
+        if ((c == '(') || (c == ')') || (c == '*') || (c == '/')) {
             return true;
         } else {
             return false;
@@ -378,14 +346,6 @@ public class Analyzer {
                     State newState = new State(stateId, set);
                     stateId++;
 
-                    //判断该状态里是否包含终态
-//                    for (State s : newState.getStatesForDFA()) {
-//                        if (s.isAcceptState()) {
-//                            newState.setAcceptState(true);
-//                            break;
-//                        }
-//                    }
-
                     dfa.getDfaStates().add(newState);
                     unHandledState.add(newState);
                     currentState.setNextState(c, newState);
@@ -394,8 +354,6 @@ public class Analyzer {
                 }
             }
         }
-
-
         return dfa;
 
     }
@@ -447,9 +405,7 @@ public class Analyzer {
         //制表
         symbols = new Character[inputSymbol.size()];
         inputSymbol.toArray(symbols);
-//        for (int i=0;i<symbols.length;i++) {
-//            System.out.print(symbols[i] + " ");
-//        }
+
         for (int i = 0; i < row; i++) {
             //每行的第一列是所有的DFA状态，依次排列
             table[i][0] = i;
@@ -496,20 +452,12 @@ public class Analyzer {
             if (!end) {
                 NF.getStates().add(s.getStateId());
             }
-//            if (s.isAcceptState()) {
-//                NF.getStates().add(s.getStateId());
-//            } else {
-//                NF.getStates().add(s.getStateId());
-//            }
         }
 
         List<Group> level = new ArrayList<Group>();
         level.addAll(finalGroups);
         level.add(NF);
 
-//        for (Group g : level) {
-//            System.out.println(g.getStates().size());
-//        }
 
         //递归进行分组
         List<Group> newLevel = level;
@@ -535,7 +483,6 @@ public class Analyzer {
             }
         } while (newLevel.size() != level.size());
 
-//        System.out.println(level.size());
 
         updateTable(level);
 
@@ -694,37 +641,6 @@ public class Analyzer {
     }
 
     public static void main(String[] args) {
-//        String s = Lex.Analyzer.addDotToRE("(a|b)*abb(a|b)*");
-//        System.out.println(nfa.getNfaStates().size());
-
-//        Analyzer.start();
         Analyzer.start();
-//        NFA nfa = Analyzer.REToNFASingle("(1|2)*", "Int");
-//        System.out.println(nfas.empty());
-//        for (Lex.State s : nfa.getNfaStates()) {
-//            s.print();
-//            System.out.println();
-//        }
-//        System.out.println(s);
-
-//        Set<Lex.State> originState = new HashSet<Lex.State>();
-//        originState.add(nfa.getNfaStates().getFirst());
-//        Set<Lex.State> states = Lex.Analyzer.epsilonClosure(originState);
-//        Set<Lex.State> states1 = Lex.Analyzer.addTransition('a', states);
-//        for (Lex.State s : states) {
-//            System.out.print(s.getStates() + " ");
-//        }
-//        System.out.println();
-//
-//        for (Lex.State s : states1) {
-//            System.out.print(s.getStates() + " ");
-//        }
-
-//        DFA dfa = Analyzer.NFAToDFA(nfa);
-//        int[][] table = Lex.Analyzer.DFATable(dfa);
-
-//        int[][] table = Analyzer.DFAToDFAO(dfa);
-
-//        System.out.println(dfa.getDfaStates().size());
     }
 }
