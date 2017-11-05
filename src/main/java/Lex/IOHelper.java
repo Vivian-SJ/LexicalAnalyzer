@@ -53,6 +53,8 @@ public class IOHelper {
             for (int i=0;i<symbolLine.length;i++) {
                 writer.write(symbolLine[i] + " ");
             }
+            //标识符的结束标志
+//            writer.write("$");
             writer.write("\n");
             writer.write(row + " " + column + "\n");
             for (int i = 0; i < row; i++) {

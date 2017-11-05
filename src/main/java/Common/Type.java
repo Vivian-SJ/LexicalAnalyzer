@@ -28,6 +28,8 @@ public class Type {
                 return "INTEGER";
             case -3:
                 return "OPERATOR";
+            case -10:
+                return "ERROR";
             default:
                 System.out.println("WRONG RE !");
                 break;

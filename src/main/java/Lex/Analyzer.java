@@ -580,7 +580,7 @@ public class Analyzer {
     //在优化后的表上，把各个终态用相应的type类型id代替，方便词法分析
     private static int[][] signState(int[][] originTable) {
         for (int i=0;i<originTable.length;i++) {
-            for (int j=1;j<originTable[0].length;j++) {
+            for (int j=0;j<originTable[0].length;j++) {
                 if (originTable[i][j] == -10) {
                     continue;
                 }
