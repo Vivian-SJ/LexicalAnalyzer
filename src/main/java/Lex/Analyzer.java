@@ -108,7 +108,7 @@ public class Analyzer {
             if (isLetter(re.charAt(i)) || isNum(re.charAt(i)) || isOperator(re.charAt(i)) || isDelimiter(re.charAt(i))) {
                 createNFA(re.charAt(i));
                 inputSymbol.add(re.charAt(i));
-            } else if (re.charAt(i) == '\\' && isSpecialDelimiter(re.charAt(i + 1))) {
+            } else if (re.charAt(i) == '\\' && isSpecial(re.charAt(i + 1))) {
                 createNFA(re.charAt(i + 1));
                 inputSymbol.add(re.charAt(i + 1));
                 i++;
@@ -189,7 +189,7 @@ public class Analyzer {
 
     //判断是不是运算符（加减乘除）
     private static boolean isOperator(Character c) {
-        if ((c == '+')|| (c == '-') || (c == '=')) {
+        if ((c == '+')|| (c == '-') || (c == '=') || (c=='{') || (c=='}')) {
             return true;
         } else {
             return false;
@@ -197,15 +197,15 @@ public class Analyzer {
     }
 
     private static boolean isDelimiter(Character c) {
-        if ((c == ';') || (c == ',') || (c == '.')) {
+        if ((c == ';') || (c == ',') || (c == '.') || (c=='~')) {
             return true;
         } else {
             return false;
         }
     }
 
-    private static boolean isSpecialDelimiter(Character c) {
-        if ((c == '(') || (c == ')')) {
+    private static boolean isSpecial(Character c) {
+        if ((c == '(') || (c == ')') || (c=='*') || (c=='/')) {
             return true;
         } else {
             return false;

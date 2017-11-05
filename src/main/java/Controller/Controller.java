@@ -52,6 +52,9 @@ public class Controller {
             char c = input.charAt(pointer);
             current = current + c;
 //            BasicType basicType = BasicType.fromCharToType(c);
+            if (c == ' ') {
+                c = '~';
+            }
             if (first == -1) {
                 state = table[0][columnNum.get(c)];
                 first = 0;
@@ -72,7 +75,11 @@ public class Controller {
 
                 //要读取最长串
                 pointer++;
-                nextState = findNextState(state, input.charAt(pointer));
+                char temp = input.charAt(pointer);
+                if (temp == ' ') {
+                    temp = '~';
+                }
+                nextState = findNextState(state, temp);
                 if (nextState != -10 && state == nextState) {
                     continue;
                 } else {
@@ -111,6 +118,10 @@ public class Controller {
 
         //处理结尾的一个字符
         char c = input.charAt(input.length() - 1);
+        current = current + c;
+        if (c == ' ') {
+            c = '~';
+        }
         if (first == -1) {
             state = table[0][columnNum.get(c)];
             first = 0;
@@ -122,7 +133,6 @@ public class Controller {
             System.out.println("ERROR!");
             return null;
         }
-        current = current + c;
         String finalType = Type.getType(state);
         addToken(result, current, finalType);
 //        state = table[state][BasicType.EMPTY.ordinal()];

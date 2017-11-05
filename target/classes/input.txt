@@ -1,1 +1,1 @@
-System.out.printlna=1+2;
+S ystem.out.println(a=1+2);
