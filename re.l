@@ -4,7 +4,7 @@ $ INTEGER : (1|2|3|4|5|6|7|8|9)*
 $ OPERATOR : +|-|=|\*|\/|\(|\)|{|}
 $ DELIMITER : ;|,|.|~|!|@|"|'
 # RE end
-#~代表空格, !代表tab, @代表换行
+#~代表输入空格, !代表输入tab, @代表输入换行
 
 # keywords:
 % abstract, assert, boolean, break, byte, case, catch, char, class, const, continue, default, do, double, else, enum, extends, false, final, finally,float, for, goto, if, implements, import, instanceof, int, interface, long, native, new, null, out, print, println, package, private, protected, public, return, System, short, static, strictfp, super, switch, synchronized, this, throw, throws, transient, try, true, void, volatile, while
