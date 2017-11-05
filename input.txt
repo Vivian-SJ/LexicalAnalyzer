@@ -1,0 +1,6 @@
+public static void main(){
+int first =1;
+int second =2;
+int result = first + second;
+System.out.println("The result is "+result);
+}

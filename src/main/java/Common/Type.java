@@ -7,7 +7,7 @@ import java.util.Set;
 /**
  * Created by vivian on 2017/11/4.
  * <p>
- * 该类用于记录.l文件中规定的所有正则字符串的名称
+ * 该类用于记录.l文件中规定的所有正则字符串的名称，即最终的token类型
  */
 public class Type {
     private static Set<String> keywords = new HashSet<String>();

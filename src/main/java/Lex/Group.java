@@ -11,7 +11,7 @@ import java.util.Set;
 public class Group {
     private Set<Integer> states;
 
-    //强关联与否
+    //强等价与否
     private boolean isStrong;
 
     public Group() {

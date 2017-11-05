@@ -1,0 +1,65 @@
+<KEYWORD, public>
+<DELIMITER,  >
+<KEYWORD, static>
+<DELIMITER,  >
+<KEYWORD, void>
+<DELIMITER,  >
+<ID, main>
+<OPERATOR, (>
+<OPERATOR, )>
+<OPERATOR, {>
+<DELIMITER, 
+>
+<KEYWORD, int>
+<DELIMITER,  >
+<ID, first>
+<DELIMITER,  >
+<OPERATOR, =>
+<INTEGER, 1>
+<DELIMITER, ;>
+<DELIMITER, 
+>
+<KEYWORD, int>
+<DELIMITER,  >
+<ID, second>
+<DELIMITER,  >
+<OPERATOR, =>
+<INTEGER, 2>
+<DELIMITER, ;>
+<DELIMITER, 
+>
+<KEYWORD, int>
+<DELIMITER,  >
+<ID, result>
+<DELIMITER,  >
+<OPERATOR, =>
+<DELIMITER,  >
+<ID, first>
+<DELIMITER,  >
+<OPERATOR, +>
+<DELIMITER,  >
+<ID, second>
+<DELIMITER, ;>
+<DELIMITER, 
+>
+<KEYWORD, System>
+<DELIMITER, .>
+<KEYWORD, out>
+<DELIMITER, .>
+<KEYWORD, println>
+<OPERATOR, (>
+<DELIMITER, ">
+<ID, The>
+<DELIMITER,  >
+<ID, result>
+<DELIMITER,  >
+<ID, is>
+<DELIMITER,  >
+<DELIMITER, ">
+<OPERATOR, +>
+<ID, result>
+<OPERATOR, )>
+<DELIMITER, ;>
+<DELIMITER, 
+>
+<OPERATOR, }>

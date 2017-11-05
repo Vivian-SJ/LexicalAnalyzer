@@ -3,12 +3,13 @@ package Controller;
 import Common.Type;
 
 import java.io.*;
+import java.util.List;
 import java.util.Scanner;
 
 /**
  * Created by vivian on 2017/11/4.
  */
-public class Reader {
+public class FileHelper {
     public static char[] readSymbolLine(String fileName) {
         char[] symbolLine = null;
         try {
@@ -77,6 +78,21 @@ public class Reader {
             System.err.println("The OS does not support " + encoding);
             e.printStackTrace();
             return "";
+        }
+    }
+
+    public static void writeToken(List<Token> tokens, String path) {
+        FileWriter writer = null;
+        try {
+            writer = new FileWriter(new File(path));
+            for (int i=0;i<tokens.size();i++) {
+                writer.write(tokens.get(i).toString());
+                writer.write("\n");
+            }
+            writer.flush();
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }

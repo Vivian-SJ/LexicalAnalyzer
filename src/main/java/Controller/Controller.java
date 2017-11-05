@@ -12,10 +12,13 @@ import java.util.Map;
  */
 public class Controller {
     // 转换表文件位置
-    private static final String TABLE_PATH = "/Users/vivian/Desktop/lexicalAnalyzer/src/main/resources/table.t";
+    private static final String TABLE_PATH = "table.t";
 
     // 输入文件位置
-    private static final String INPUT_PATH = "/Users/vivian/Desktop/lexicalAnalyzer/src/main/resources/input.txt";
+    private static final String INPUT_PATH = "input.txt";
+
+    //输出文件位置
+    private static final String OUTPUT_PATH = "output.txt";
 
     // 转换表
     private int[][] table;
@@ -24,16 +27,16 @@ public class Controller {
     private Map<Character, Integer> columnNum = new HashMap<Character, Integer>();
 
     public Controller() {
-        char[] symbolLine = Reader.readSymbolLine(TABLE_PATH);
+        char[] symbolLine = FileHelper.readSymbolLine(TABLE_PATH);
         for (int i = 1; i < symbolLine.length; i++) {
             columnNum.put(symbolLine[i], i);
         }
-        table = Reader.readTable(TABLE_PATH);
+        table = FileHelper.readTable(TABLE_PATH);
     }
 
     //生成token序列
-    public List<Token> generateToken() {
-        String input = Reader.readInput(INPUT_PATH);
+    public void generateToken() {
+        String input = FileHelper.readInput(INPUT_PATH);
         int pointer = 0;
         int state = 0;
         int nextState = 0;
@@ -62,7 +65,7 @@ public class Controller {
             if (state < 0) {
                 if (state == -10) {
                     System.out.println("ERROR!");
-                    return null;
+                    return;
                 }
 
                 //要读取最长串
@@ -100,7 +103,7 @@ public class Controller {
         }
         if (state == -10) {
             System.out.println("ERROR!");
-            return null;
+            return;
         }
         String finalType = Type.getType(state);
         addToken(result, current, finalType);
@@ -113,7 +116,8 @@ public class Controller {
 //        }
 //        addToken(result, current, finalType);
 
-        return result;
+//        return result;
+        FileHelper.writeToken(result, OUTPUT_PATH);
     }
 
     private int findNextState(int currentState, char c) {

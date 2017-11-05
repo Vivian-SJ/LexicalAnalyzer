@@ -7,10 +7,10 @@ import java.util.*;
  */
 public class Analyzer {
     //.l文件的位置
-    private static final String L_PATH = "/Users/vivian/Desktop/lexicalAnalyzer/src/main/resources/re.l";
+    private static final String L_PATH = "re.l";
 
     //转换表文件的位置
-    private static final String TABLE_PATH = "/Users/vivian/Desktop/lexicalAnalyzer/src/main/resources/table.t";
+    private static final String TABLE_PATH = "table.t";
 
     private static int stateId = 0;
     private static Stack<Character> operators = new Stack<Character>();
@@ -28,7 +28,7 @@ public class Analyzer {
 
     // 记录最终状态
     // key ----- 最终状态号
-    // value ----- 最终状态表征的token type, -1代表ID， -2代表INTEGER, -3代表OPERATOR
+    // value ----- 最终状态表征的token type, -1代表ID， -2代表INTEGER, -3代表OPERATOR，-4代表DELIMITER
     private static HashMap<Integer, Integer> finalNFAStates = new HashMap<Integer, Integer>();
     private static HashMap<Integer, Integer> finalDFAStates = new HashMap<Integer, Integer>();
 
